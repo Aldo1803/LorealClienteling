@@ -13,6 +13,53 @@ const interactionLogSchema = new mongoose.Schema({
       message: 'Client ID does not exist'
     }
   },
+  sku: {
+    type: String,
+    required: [true, 'SKU is required'],
+    trim: true,
+    minlength: [1, 'SKU cannot be empty'],
+    maxlength: [50, 'SKU cannot exceed 50 characters']
+  },
+  product: {
+    type: String,
+    required: [true, 'Product is required'],
+    trim: true,
+    minlength: [1, 'Product name cannot be empty'],
+    maxlength: [200, 'Product name cannot exceed 200 characters']
+  },
+  brand: {
+    type: String,
+    required: [true, 'Brand is required'],
+    trim: true,
+    minlength: [1, 'Brand name cannot be empty'],
+    maxlength: [100, 'Brand name cannot exceed 100 characters']
+  },
+  productPhoto: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // Allow empty values
+        return typeof v === 'string' && v.length > 0;
+      },
+      message: 'Product photo must be a valid file path'
+    }
+  },
+  recommendationDate: {
+    type: Date,
+    default: Date.now,
+    validate: {
+      validator: function(v) {
+        return v instanceof Date && !isNaN(v);
+      },
+      message: 'Recommendation date must be a valid date'
+    }
+  },
+  additionalNotes: {
+    type: String,
+    trim: true,
+    maxlength: [1000, 'Additional notes cannot exceed 1000 characters']
+  },
   notes: {
     type: String,
     required: [true, 'Notes are required'],
@@ -39,6 +86,10 @@ const interactionLogSchema = new mongoose.Schema({
 // Create indexes for better query performance
 interactionLogSchema.index({ clientId: 1 });
 interactionLogSchema.index({ createdAt: -1 });
+interactionLogSchema.index({ sku: 1 });
+interactionLogSchema.index({ product: 1 });
+interactionLogSchema.index({ brand: 1 });
+interactionLogSchema.index({ recommendationDate: -1 });
 
 const InteractionLog = mongoose.model('InteractionLog', interactionLogSchema);
 

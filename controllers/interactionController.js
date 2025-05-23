@@ -1,17 +1,51 @@
 const InteractionLog = require('../models/InteractionLog');
 const path = require('path');
+const fs = require('fs');
 
 // Create a new interaction log with file uploads
 exports.createInteraction = async (req, res) => {
   try {
-    const { clientId, notes } = req.body;
+    const { 
+      clientId, 
+      notes, 
+      sku, 
+      product, 
+      brand, 
+      recommendationDate,
+      additionalNotes 
+    } = req.body;
     
-    // Get file paths from uploaded files
-    const files = req.files ? req.files.map(file => file.path) : [];
+    // Validate required fields
+    const requiredFields = ['clientId', 'notes', 'sku', 'product', 'brand'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        fields: missingFields
+      });
+    }
+
+    // Handle product photo upload
+    let productPhoto = null;
+    if (req.files && req.files.productPhoto) {
+      const photoFile = req.files.productPhoto[0];
+      productPhoto = photoFile.path;
+    }
+
+    // Get file paths from other uploaded files
+    const files = req.files && req.files.files ? 
+      req.files.files.map(file => file.path) : [];
 
     const interaction = new InteractionLog({
       clientId,
       notes,
+      sku,
+      product,
+      brand,
+      productPhoto,
+      recommendationDate: recommendationDate || new Date(),
+      additionalNotes,
       files
     });
 
@@ -20,8 +54,7 @@ exports.createInteraction = async (req, res) => {
   } catch (error) {
     // If there's an error, delete any uploaded files
     if (req.files) {
-      req.files.forEach(file => {
-        const fs = require('fs');
+      Object.values(req.files).flat().forEach(file => {
         if (fs.existsSync(file.path)) {
           fs.unlinkSync(file.path);
         }
@@ -64,6 +97,86 @@ exports.getInteraction = async (req, res) => {
   }
 };
 
+// Update an interaction
+exports.updateInteraction = async (req, res) => {
+  try {
+    const { 
+      notes, 
+      sku, 
+      product, 
+      brand, 
+      recommendationDate,
+      additionalNotes 
+    } = req.body;
+
+    // Validate required fields if they are being updated
+    const requiredFields = ['sku', 'product', 'brand'];
+    const missingFields = requiredFields.filter(field => 
+      req.body[field] === undefined || req.body[field] === null
+    );
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        fields: missingFields
+      });
+    }
+
+    // Handle product photo upload
+    let productPhoto = undefined;
+    if (req.files && req.files.productPhoto) {
+      const photoFile = req.files.productPhoto[0];
+      productPhoto = photoFile.path;
+
+      // Delete old product photo if it exists
+      const oldInteraction = await InteractionLog.findById(req.params.id);
+      if (oldInteraction && oldInteraction.productPhoto) {
+        if (fs.existsSync(oldInteraction.productPhoto)) {
+          fs.unlinkSync(oldInteraction.productPhoto);
+        }
+      }
+    }
+
+    const updateData = {
+      notes,
+      sku,
+      product,
+      brand,
+      recommendationDate,
+      additionalNotes
+    };
+
+    if (productPhoto) {
+      updateData.productPhoto = productPhoto;
+    }
+
+    const interaction = await InteractionLog.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!interaction) {
+      return res.status(404).json({ message: 'Interaction not found' });
+    }
+
+    res.status(200).json(interaction);
+  } catch (error) {
+    // If there's an error, delete any uploaded files
+    if (req.files) {
+      Object.values(req.files).flat().forEach(file => {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      });
+    }
+    res.status(400).json({ 
+      message: 'Error updating interaction',
+      error: error.message 
+    });
+  }
+};
+
 // Delete an interaction and its associated files
 exports.deleteInteraction = async (req, res) => {
   try {
@@ -72,8 +185,12 @@ exports.deleteInteraction = async (req, res) => {
       return res.status(404).json({ message: 'Interaction not found' });
     }
 
+    // Delete product photo if it exists
+    if (interaction.productPhoto && fs.existsSync(interaction.productPhoto)) {
+      fs.unlinkSync(interaction.productPhoto);
+    }
+
     // Delete associated files
-    const fs = require('fs');
     interaction.files.forEach(filePath => {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

@@ -1,24 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const interactionController = require('../controllers/interactionController');
-const upload = require('../utils/upload');
-const auth = require('../middleware/auth');
-const roles = require('../middleware/roles');
+const { auth } = require('../middleware/auth');
+const { combinedUpload } = require('../utils/upload');
 
-// Create a new interaction with file uploads (protected, both admin and advisor)
-router.post('/', 
-  auth,
-  upload.array('files', 5),
-  interactionController.createInteraction
-);
+// Create new interaction
+router.post('/', auth, combinedUpload, interactionController.createInteraction);
 
-// Get all interactions for a client (protected, both admin and advisor)
-router.get('/client/:clientId', auth, interactionController.getClientInteractions);
+// Get all interactions
+router.get('/', auth, interactionController.getAllInteractions);
 
-// Get a single interaction (protected, both admin and advisor)
-router.get('/:id', auth, interactionController.getInteraction);
+// Get interaction by ID
+router.get('/:id', auth, interactionController.getInteractionById);
 
-// Delete an interaction (protected, admin only)
-router.delete('/:id', auth, roles('admin'), interactionController.deleteInteraction);
+// Update interaction
+router.put('/:id', auth, combinedUpload, interactionController.updateInteraction);
+
+// Delete interaction
+router.delete('/:id', auth, interactionController.deleteInteraction);
 
 module.exports = router; 

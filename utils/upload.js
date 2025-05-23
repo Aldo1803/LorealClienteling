@@ -29,7 +29,22 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer
+// Product photo filter - only images
+const productPhotoFilter = (req, file, cb) => {
+  const allowedImageTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif'
+  ];
+
+  if (allowedImageTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and GIF images are allowed for product photos.'), false);
+  }
+};
+
+// Configure multer for regular files
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
@@ -39,4 +54,41 @@ const upload = multer({
   }
 });
 
-module.exports = upload; 
+// Configure multer for product photos
+const productPhotoUpload = multer({
+  storage: storage,
+  fileFilter: productPhotoFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit for product photos
+    files: 1 // Only one product photo allowed
+  }
+});
+
+// Combined upload middleware
+const combinedUpload = (req, res, next) => {
+  const uploadFields = [
+    { name: 'productPhoto', maxCount: 1 },
+    { name: 'files', maxCount: 5 }
+  ];
+
+  multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+      if (file.fieldname === 'productPhoto') {
+        productPhotoFilter(req, file, cb);
+      } else {
+        fileFilter(req, file, cb);
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+      files: 6 // Maximum 6 files total (1 product photo + 5 other files)
+    }
+  }).fields(uploadFields)(req, res, next);
+};
+
+module.exports = {
+  upload,
+  productPhotoUpload,
+  combinedUpload
+}; 
