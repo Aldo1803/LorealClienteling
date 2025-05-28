@@ -7,6 +7,7 @@ const interactionRoutes = require('./interactions');
 const kpiRoutes = require('./kpis');
 const authRoutes = require('./auth');
 const healthRoutes = require('./health');
+const satisfactionSurveyRoutes = require('./satisfactionSurveys');
 
 // Mount routes
 router.use('/clients', clientRoutes);
@@ -14,6 +15,7 @@ router.use('/interactions', interactionRoutes);
 router.use('/kpis', kpiRoutes);
 router.use('/auth', authRoutes);
 router.use('/health', healthRoutes);
+router.use('/satisfaction-surveys', satisfactionSurveyRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

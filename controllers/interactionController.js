@@ -70,7 +70,8 @@ exports.createInteraction = async (req, res) => {
 // Get all interactions for a client
 exports.getClientInteractions = async (req, res) => {
   try {
-    const interactions = await InteractionLog.find({ clientId: req.params.clientId })
+    const query = req.params.clientId ? { clientId: req.params.clientId } : {};
+    const interactions = await InteractionLog.find(query)
       .sort({ createdAt: -1 });
     res.status(200).json(interactions);
   } catch (error) {

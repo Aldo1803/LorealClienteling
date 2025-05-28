@@ -84,7 +84,20 @@ const combinedUpload = (req, res, next) => {
       fileSize: 5 * 1024 * 1024, // 5MB limit
       files: 6 // Maximum 6 files total (1 product photo + 5 other files)
     }
-  }).fields(uploadFields)(req, res, next);
+  }).fields(uploadFields)(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({
+        message: 'File upload error',
+        error: err.message
+      });
+    } else if (err) {
+      return res.status(400).json({
+        message: 'Invalid file type',
+        error: err.message
+      });
+    }
+    next();
+  });
 };
 
 module.exports = {
