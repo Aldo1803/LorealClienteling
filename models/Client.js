@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const purchaseHistorySchema = new mongoose.Schema({
+    product: {
+        type: String,
+        required: true
+    },
+    date: {
+        type: Date,
+        required: true,
+        default: Date.now
+    }
+});
+
 const clientSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -199,6 +211,11 @@ const clientSchema = new mongoose.Schema({
       },
       message: 'Consent date must be a valid date'
     }
+  },
+  purchaseHistory: [purchaseHistorySchema],
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
@@ -212,6 +229,12 @@ clientSchema.index({ skinType: 1 });
 clientSchema.index({ currentBrands: 1 });
 clientSchema.index({ interests: 1 });
 clientSchema.index({ eventTypes: 1 });
+
+// Update the updatedAt timestamp before saving
+clientSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
+});
 
 const Client = mongoose.model('Client', clientSchema);
 

@@ -2,24 +2,30 @@ const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
 const auth = require('../middleware/auth');
-const roles = require('../middleware/roles');
+const { checkRole } = require('../middleware/roleCheck');
 
 // Create a new client
 router.post('/', auth, clientController.createClient);
 
-// Get all clients
-router.get('/', auth, clientController.getAllClients);
+// Get all clients (admin only)
+router.get('/', auth, checkRole('admin'), clientController.getAllClients);
 
-// Get a single client
-router.get('/:id', auth, clientController.getClientById);
+// Get client by ID
+router.get('/:clientId', auth, clientController.getClientById);
 
-// Update a client
-router.put('/:id', auth, clientController.updateClient);
+// Update client
+router.put('/:clientId', auth, clientController.updateClient);
 
-// Delete a client
-router.delete('/:id', auth, roles('admin'), clientController.deleteClient);
+// Delete client (admin only)
+router.delete('/:clientId', auth, checkRole('admin'), clientController.deleteClient);
 
-// Anonymize client data
-router.put('/:id/anonymize', auth, roles('admin'), clientController.anonymizeClient);
+// Add purchase to client history
+router.post('/:clientId/purchases', auth, clientController.addPurchase);
+
+// Get client purchase history
+router.get('/:clientId/purchases', auth, clientController.getPurchaseHistory);
+
+// Update client preferences
+router.put('/:clientId/preferences', auth, clientController.updatePreferences);
 
 module.exports = router; 
