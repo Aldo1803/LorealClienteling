@@ -1,128 +1,125 @@
 const Client = require('../models/Client');
-const InteractionLog = require('../models/InteractionLog');
-const fs = require('fs');
-const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 // Create a new client
 exports.createClient = async (req, res) => {
-  try {
-    const { name, email, phone, preferences } = req.body;
-    
-    const client = new Client({
-      clientId: uuidv4(),
-      name,
-      email,
-      phone,
-      preferences: preferences || []
-    });
+    try {
+        const { name, email, phone, preferences } = req.body;
+        
+        const client = new Client({
+            client_id: uuidv4(),
+            name,
+            email,
+            phone,
+            preferences: preferences || []
+        });
 
-    await client.save();
-    res.status(201).json(client);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+        await client.save();
+        res.status(201).json(client);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 };
 
 // Get all clients
 exports.getAllClients = async (req, res) => {
-  try {
-    const clients = await Client.find().sort({ createdAt: -1 });
-    res.json(clients);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    try {
+        const clients = await Client.find();
+        res.json(clients);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // Get client by ID
 exports.getClientById = async (req, res) => {
-  try {
-    const client = await Client.findOne({ clientId: req.params.clientId });
-    if (!client) {
-      return res.status(404).json({ message: 'Client not found' });
+    try {
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        res.json(client);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.json(client);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 // Update client
 exports.updateClient = async (req, res) => {
-  try {
-    const { name, email, phone, preferences } = req.body;
-    const client = await Client.findOne({ clientId: req.params.clientId });
-    
-    if (!client) {
-      return res.status(404).json({ message: 'Client not found' });
+    try {
+        const { name, email, phone, preferences } = req.body;
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        if (name) client.name = name;
+        if (email) client.email = email;
+        if (phone) client.phone = phone;
+        if (preferences) client.preferences = preferences;
+
+        await client.save();
+        res.json(client);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
-
-    if (name) client.name = name;
-    if (email) client.email = email;
-    if (phone) client.phone = phone;
-    if (preferences) client.preferences = preferences;
-
-    await client.save();
-    res.json(client);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
 };
 
 // Delete client
 exports.deleteClient = async (req, res) => {
-  try {
-    const client = await Client.findOne({ clientId: req.params.clientId });
-    if (!client) {
-      return res.status(404).json({ message: 'Client not found' });
+    try {
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        await client.remove();
+        res.json({ message: 'Client deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    await client.remove();
-    res.json({ message: 'Client deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 // Add purchase to client history
 exports.addPurchase = async (req, res) => {
-  try {
-    const { product } = req.body;
-    const client = await Client.findOne({ clientId: req.params.clientId });
-    
-    if (!client) {
-      return res.status(404).json({ message: 'Client not found' });
+    try {
+        const { product } = req.body;
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        client.purchase_history.push({
+            product,
+            date: new Date()
+        });
+
+        await client.save();
+        res.json(client);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
-
-    client.purchaseHistory.push({
-      product,
-      date: new Date()
-    });
-
-    await client.save();
-    res.json(client);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
 };
 
 // Get client purchase history
 exports.getPurchaseHistory = async (req, res) => {
-  try {
-    const client = await Client.findOne({ clientId: req.params.clientId });
-    if (!client) {
-      return res.status(404).json({ message: 'Client not found' });
+    try {
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        res.json(client.purchase_history);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.json(client.purchaseHistory);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 // Update client preferences
 exports.updatePreferences = async (req, res) => {
   try {
     const { preferences } = req.body;
-    const client = await Client.findOne({ clientId: req.params.clientId });
+    const client = await Client.findOne({ client_id: req.params.client_id });
     
     if (!client) {
       return res.status(404).json({ message: 'Client not found' });
