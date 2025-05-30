@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Import route modules
 const clientRoutes = require('./clients');
-const interactionRoutes = require('./interactions');
+const interactionLogRoutes = require('./interactionLogs');
 const kpiRoutes = require('./kpis');
 const authRoutes = require('./auth');
 const healthRoutes = require('./health');
@@ -11,7 +11,7 @@ const satisfactionSurveyRoutes = require('./satisfactionSurveys');
 
 // Mount routes
 router.use('/clients', clientRoutes);
-router.use('/interactions', interactionRoutes);
+router.use('/interaction-logs', interactionLogRoutes);
 router.use('/kpis', kpiRoutes);
 router.use('/auth', authRoutes);
 router.use('/health', healthRoutes);

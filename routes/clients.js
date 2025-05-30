@@ -11,21 +11,21 @@ router.post('/', auth, clientController.createClient);
 router.get('/', auth, checkRole('admin'), clientController.getAllClients);
 
 // Get client by ID
-router.get('/:clientId', auth, clientController.getClientById);
+router.get('/:client_id', auth, clientController.getClientById);
 
 // Update client
-router.put('/:clientId', auth, clientController.updateClient);
+router.put('/:client_id', auth, clientController.updateClient);
 
 // Delete client (admin only)
-router.delete('/:clientId', auth, checkRole('admin'), clientController.deleteClient);
+router.delete('/:client_id', auth, checkRole('admin'), clientController.deleteClient);
 
 // Add purchase to client history
-router.post('/:clientId/purchases', auth, clientController.addPurchase);
+router.post('/:client_id/purchases', auth, clientController.addPurchase);
 
 // Get client purchase history
-router.get('/:clientId/purchases', auth, clientController.getPurchaseHistory);
+router.get('/:client_id/purchases', auth, clientController.getPurchaseHistory);
 
 // Update client preferences
-router.put('/:clientId/preferences', auth, clientController.updatePreferences);
+router.put('/:client_id/preferences', auth, clientController.updatePreferences);
 
 module.exports = router; 
