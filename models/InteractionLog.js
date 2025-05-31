@@ -33,7 +33,34 @@ const interactionLogSchema = new mongoose.Schema({
   comments: {
     type: String,
     maxlength: 500
+  },
+  // New fields for file uploads and additional metadata
+  product_photo: {
+    type: String,
+    default: null
+  },
+  additional_files: [{
+    filename: String,
+    path: String,
+    mimetype: String,
+    size: Number,
+    uploaded_at: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  metadata: {
+    location: String,
+    duration: Number, // in minutes
+    follow_up_required: {
+      type: Boolean,
+      default: false
+    },
+    follow_up_date: Date,
+    follow_up_notes: String
   }
+}, {
+  timestamps: true
 });
 
 // Create indexes for better query performance
@@ -43,5 +70,7 @@ interactionLogSchema.index({ beauty_advisor_id: 1 });
 interactionLogSchema.index({ date: 1 });
 interactionLogSchema.index({ action: 1 });
 interactionLogSchema.index({ viewed_product: 1 });
+interactionLogSchema.index({ 'metadata.follow_up_required': 1 });
+interactionLogSchema.index({ 'metadata.follow_up_date': 1 });
 
 module.exports = mongoose.model('InteractionLog', interactionLogSchema); 
