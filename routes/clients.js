@@ -28,4 +28,7 @@ router.get('/:client_id/purchases', auth, clientController.getPurchaseHistory);
 // Update client preferences
 router.put('/:client_id/preferences', auth, clientController.updatePreferences);
 
+// Update days without interaction
+router.put('/:client_id/days-without-interaction', auth, clientController.updateDaysWithoutInteraction);
+
 module.exports = router; 

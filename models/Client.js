@@ -41,7 +41,21 @@ const clientSchema = new mongoose.Schema({
     preferences: [{
         type: String
     }],
-    purchase_history: [purchaseHistorySchema]
+    purchase_history: [purchaseHistorySchema],
+    preferredContactMethod: {
+        type: String,
+        enum: ['email', 'phone', 'whatsapp', 'sms'],
+        default: 'email'
+    },
+    daysWithoutInteraction: {
+        type: Number,
+        default: 0
+    },
+    followUpPhase: {
+        type: String,
+        enum: ['initial', 'follow-up', 'maintenance', 're-engagement'],
+        default: 'initial'
+    }
 });
 
 // Create indexes for better query performance
@@ -52,6 +66,8 @@ clientSchema.index({ phone: 1 });
 clientSchema.index({ clientType: 1 });
 clientSchema.index({ preferences: 1 });
 clientSchema.index({ 'purchase_history.date': 1 });
+clientSchema.index({ preferredContactMethod: 1 });
+clientSchema.index({ followUpPhase: 1 });
 
 // Update the updatedAt timestamp before saving
 clientSchema.pre('save', function(next) {

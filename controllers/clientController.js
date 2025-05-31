@@ -1,17 +1,21 @@
 const Client = require('../models/Client');
 const { v4: uuidv4 } = require('uuid');
+const InteractionLog = require('../models/InteractionLog');
 
 // Create a new client
 exports.createClient = async (req, res) => {
     try {
-        const { name, email, phone, preferences } = req.body;
+        const { name, email, phone, preferences, preferredContactMethod, followUpPhase } = req.body;
         
         const client = new Client({
             client_id: uuidv4(),
             name,
             email,
             phone,
-            preferences: preferences || []
+            preferences: preferences || [],
+            preferredContactMethod: preferredContactMethod || 'email',
+            followUpPhase: followUpPhase || 'initial',
+            daysWithoutInteraction: 0
         });
 
         await client.save();
@@ -47,7 +51,7 @@ exports.getClientById = async (req, res) => {
 // Update client
 exports.updateClient = async (req, res) => {
     try {
-        const { name, email, phone, preferences } = req.body;
+        const { name, email, phone, preferences, preferredContactMethod, followUpPhase } = req.body;
         const client = await Client.findOne({ client_id: req.params.client_id });
         
         if (!client) {
@@ -58,6 +62,8 @@ exports.updateClient = async (req, res) => {
         if (email) client.email = email;
         if (phone) client.phone = phone;
         if (preferences) client.preferences = preferences;
+        if (preferredContactMethod) client.preferredContactMethod = preferredContactMethod;
+        if (followUpPhase) client.followUpPhase = followUpPhase;
 
         await client.save();
         res.json(client);
@@ -188,4 +194,31 @@ exports.anonymizeClient = async (req, res) => {
       error: error.message 
     });
   }
+};
+
+// Add a new function to update days without interaction
+exports.updateDaysWithoutInteraction = async (req, res) => {
+    try {
+        const client = await Client.findOne({ client_id: req.params.client_id });
+        
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        // Get the last interaction date from the interaction logs
+        const lastInteraction = await InteractionLog.findOne({ client_id: client.client_id })
+            .sort({ date: -1 });
+
+        if (lastInteraction) {
+            const daysDiff = Math.floor((new Date() - new Date(lastInteraction.date)) / (1000 * 60 * 60 * 24));
+            client.daysWithoutInteraction = daysDiff;
+        } else {
+            client.daysWithoutInteraction = 0;
+        }
+
+        await client.save();
+        res.json(client);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 }; 
