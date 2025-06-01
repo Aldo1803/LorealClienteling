@@ -94,11 +94,13 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
                 client_id: client.client_id 
             }).sort({ date: -1 });
 
+            const daysSinceLastInteraction = lastInteraction 
+                ? Math.floor((new Date() - new Date(lastInteraction.date)) / (1000 * 60 * 60 * 24))
+                : null;
+
             return {
                 ...client.toObject(),
-                days_since_last_interaction: lastInteraction 
-                    ? Math.floor((new Date() - lastInteraction.date) / (1000 * 60 * 60 * 24))
-                    : null,
+                days_since_last_interaction: daysSinceLastInteraction,
                 last_interaction_date: lastInteraction ? lastInteraction.date : null
             };
         }));
