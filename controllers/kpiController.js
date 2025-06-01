@@ -4,6 +4,7 @@ const InteractionLog = require('../models/InteractionLog');
 exports.getSummary = async (req, res) => {
   try {
     const { fromDate, toDate, advisorId } = req.query;
+    console.log('Query parameters:', { fromDate, toDate, advisorId });
 
     // Build base query conditions
     const baseQuery = {};
@@ -19,6 +20,7 @@ exports.getSummary = async (req, res) => {
         interactionQuery.date.$lte = new Date(toDate);
       }
     }
+    console.log('Interaction query:', JSON.stringify(interactionQuery, null, 2));
 
     // Add advisor filter if provided
     if (advisorId) {
@@ -27,9 +29,18 @@ exports.getSummary = async (req, res) => {
 
     // Get total number of clients
     const totalClients = await Client.countDocuments();
+    console.log('Total clients:', totalClients);
+
+    // Debug: Check all interactions without filters
+    const allInteractions = await InteractionLog.find().lean();
+    console.log('All interactions in database:', allInteractions.length);
+    if (allInteractions.length > 0) {
+      console.log('Sample interaction:', allInteractions[0]);
+    }
 
     // Get total number of interaction logs (filtered if date range provided)
     const totalInteractions = await InteractionLog.countDocuments(interactionQuery);
+    console.log('Total interactions with filters:', totalInteractions);
 
     // Get interactions in the last 30 days (only if no date range provided)
     let recentInteractions;
@@ -38,17 +49,21 @@ exports.getSummary = async (req, res) => {
     } else {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      recentInteractions = await InteractionLog.countDocuments({
+      const recentQuery = {
         ...interactionQuery,
         date: { $gte: thirtyDaysAgo }
-      });
+      };
+      console.log('Recent interactions query:', JSON.stringify(recentQuery, null, 2));
+      recentInteractions = await InteractionLog.countDocuments(recentQuery);
     }
+    console.log('Recent interactions:', recentInteractions);
 
     // Get number of clients with at least one interaction (filtered if date range provided)
     const clientsWithInteractions = await InteractionLog.distinct('client_id', interactionQuery);
+    console.log('Clients with interactions:', clientsWithInteractions);
     const clientsWithFollowUp = clientsWithInteractions.length;
 
-    res.status(200).json({
+    const response = {
       totalClients,
       totalInteractions,
       recentInteractions,
@@ -58,8 +73,12 @@ exports.getSummary = async (req, res) => {
         toDate: toDate || null,
         advisorId: advisorId || null
       }
-    });
+    };
+    console.log('Final response:', response);
+
+    res.status(200).json(response);
   } catch (error) {
+    console.error('Error in getSummary:', error);
     res.status(500).json({
       message: 'Error fetching KPI summary',
       error: error.message
