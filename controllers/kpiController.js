@@ -11,19 +11,18 @@ exports.getSummary = async (req, res) => {
 
     // Add date range filter if provided
     if (fromDate || toDate) {
-      interactionQuery.createdAt = {};
+      interactionQuery.date = {};
       if (fromDate) {
-        interactionQuery.createdAt.$gte = new Date(fromDate);
+        interactionQuery.date.$gte = new Date(fromDate);
       }
       if (toDate) {
-        interactionQuery.createdAt.$lte = new Date(toDate);
+        interactionQuery.date.$lte = new Date(toDate);
       }
     }
 
-    // Prepare for future advisorId filter
+    // Add advisor filter if provided
     if (advisorId) {
-      // This will be implemented when advisor functionality is added
-      // interactionQuery.advisorId = advisorId;
+      interactionQuery.beauty_advisor_id = advisorId;
     }
 
     // Get total number of clients
@@ -41,12 +40,12 @@ exports.getSummary = async (req, res) => {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       recentInteractions = await InteractionLog.countDocuments({
         ...interactionQuery,
-        createdAt: { $gte: thirtyDaysAgo }
+        date: { $gte: thirtyDaysAgo }
       });
     }
 
     // Get number of clients with at least one interaction (filtered if date range provided)
-    const clientsWithInteractions = await InteractionLog.distinct('clientId', interactionQuery);
+    const clientsWithInteractions = await InteractionLog.distinct('client_id', interactionQuery);
     const clientsWithFollowUp = clientsWithInteractions.length;
 
     res.status(200).json({
