@@ -1,5 +1,6 @@
 const Client = require('../models/Client');
 const InteractionLog = require('../models/InteractionLog');
+const SatisfactionSurvey = require('../models/SatisfactionSurvey');
 
 exports.getSummary = async (req, res) => {
   try {
@@ -205,4 +206,119 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
             error: error.message 
         });
     }
+};
+
+// Get average satisfaction score
+exports.getAverageSatisfactionScore = async (req, res) => {
+  try {
+    const { fromDate, toDate, advisorId } = req.query;
+    console.log('Query parameters:', { fromDate, toDate, advisorId });
+
+    // Build base query conditions
+    const surveyQuery = {};
+
+    // Add date range filter if provided
+    if (fromDate || toDate) {
+      surveyQuery.date = {};
+      if (fromDate) {
+        const fromDateObj = new Date(fromDate);
+        fromDateObj.setHours(0, 0, 0, 0); // Set to start of day
+        surveyQuery.date.$gte = fromDateObj;
+        console.log('From date:', fromDateObj);
+      }
+      if (toDate) {
+        const toDateObj = new Date(toDate);
+        toDateObj.setHours(23, 59, 59, 999); // Set to end of day
+        surveyQuery.date.$lte = toDateObj;
+        console.log('To date:', toDateObj);
+      }
+    }
+
+    // Add advisor filter if provided
+    if (advisorId) {
+      surveyQuery.userId = advisorId;
+    }
+
+    console.log('Survey query:', JSON.stringify(surveyQuery, null, 2));
+
+    // Get all surveys matching the query
+    const surveys = await SatisfactionSurvey.find(surveyQuery).lean();
+    console.log('Total surveys found:', surveys.length);
+
+    if (surveys.length === 0) {
+      return res.status(200).json({
+        averageScore: 0,
+        totalSurveys: 0,
+        scoreDistribution: {
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+          5: 0
+        },
+        filters: {
+          fromDate: fromDate || null,
+          toDate: toDate || null,
+          advisorId: advisorId || null
+        }
+      });
+    }
+
+    // Calculate average score
+    const totalScore = surveys.reduce((sum, survey) => sum + survey.overallScore, 0);
+    const averageScore = totalScore / surveys.length;
+
+    // Calculate score distribution
+    const scoreDistribution = surveys.reduce((dist, survey) => {
+      dist[survey.overallScore] = (dist[survey.overallScore] || 0) + 1;
+      return dist;
+    }, { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+
+    // Calculate average scores for each response category
+    const categoryAverages = {
+      friendliness: 0,
+      productKnowledge: 0,
+      usefulRecommendations: 0
+    };
+
+    surveys.forEach(survey => {
+      categoryAverages.friendliness += survey.responses.friendliness;
+      categoryAverages.productKnowledge += survey.responses.productKnowledge;
+      categoryAverages.usefulRecommendations += survey.responses.usefulRecommendations;
+    });
+
+    Object.keys(categoryAverages).forEach(category => {
+      categoryAverages[category] = categoryAverages[category] / surveys.length;
+    });
+
+    // Calculate percentage of "would return" responses
+    const wouldReturnCount = surveys.filter(survey => 
+      survey.responses.wouldReturn === 'Sí'
+    ).length;
+    const wouldReturnPercentage = (wouldReturnCount / surveys.length) * 100;
+
+    const response = {
+      averageScore: parseFloat(averageScore.toFixed(2)),
+      totalSurveys: surveys.length,
+      scoreDistribution,
+      categoryAverages: Object.fromEntries(
+        Object.entries(categoryAverages).map(([key, value]) => [key, parseFloat(value.toFixed(2))])
+      ),
+      wouldReturnPercentage: parseFloat(wouldReturnPercentage.toFixed(2)),
+      filters: {
+        fromDate: fromDate || null,
+        toDate: toDate || null,
+        advisorId: advisorId || null
+      }
+    };
+
+    console.log('Final response:', response);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error in getAverageSatisfactionScore:', error);
+    res.status(500).json({
+      message: 'Error calculating average satisfaction score',
+      error: error.message
+    });
+  }
 }; 

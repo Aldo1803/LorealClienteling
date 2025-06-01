@@ -7,6 +7,9 @@ const roles = require('../middleware/roles');
 // Get KPI summary (admin only)
 router.get('/summary', auth, roles('admin'), kpiController.getSummary);
 
+// Get average satisfaction score (admin only)
+router.get('/satisfaction-score', auth, roles('admin'), kpiController.getAverageSatisfactionScore);
+
 // Get clients without recent interactions (admin only)
 router.get('/inactive-clients', auth, roles('admin'), kpiController.getClientsWithoutRecentInteractions);
 
