@@ -14,10 +14,16 @@ exports.getSummary = async (req, res) => {
     if (fromDate || toDate) {
       interactionQuery.date = {};
       if (fromDate) {
-        interactionQuery.date.$gte = new Date(fromDate);
+        const fromDateObj = new Date(fromDate);
+        fromDateObj.setHours(0, 0, 0, 0); // Set to start of day
+        interactionQuery.date.$gte = fromDateObj;
+        console.log('From date:', fromDateObj);
       }
       if (toDate) {
-        interactionQuery.date.$lte = new Date(toDate);
+        const toDateObj = new Date(toDate);
+        toDateObj.setHours(23, 59, 59, 999); // Set to end of day
+        interactionQuery.date.$lte = toDateObj;
+        console.log('To date:', toDateObj);
       }
     }
     console.log('Interaction query:', JSON.stringify(interactionQuery, null, 2));
@@ -36,6 +42,13 @@ exports.getSummary = async (req, res) => {
     console.log('All interactions in database:', allInteractions.length);
     if (allInteractions.length > 0) {
       console.log('Sample interaction:', allInteractions[0]);
+      // Log date ranges of all interactions
+      const dateRanges = allInteractions.map(interaction => ({
+        id: interaction.interaction_id,
+        date: interaction.date,
+        client_id: interaction.client_id
+      }));
+      console.log('All interaction dates:', dateRanges);
     }
 
     // Get total number of interaction logs (filtered if date range provided)
@@ -48,7 +61,7 @@ exports.getSummary = async (req, res) => {
       recentInteractions = totalInteractions; // If date range provided, use total filtered count
     } else {
       const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      thirtyDaysAgo.setHours(0, 0, 0, 0); // Set to start of day
       const recentQuery = {
         ...interactionQuery,
         date: { $gte: thirtyDaysAgo }
