@@ -77,32 +77,57 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
 
         // Get all clients
         const allClients = await Client.find();
+        console.log('Total clients found:', allClients.length);
         
         // Get clients with recent interactions
         const recentInteractions = await InteractionLog.find({
             date: { $gte: cutoffDate }
         }).distinct('client_id');
+        console.log('Clients with recent interactions:', recentInteractions);
 
         // Filter out clients with recent interactions
         const inactiveClients = allClients.filter(client => 
             !recentInteractions.includes(client.client_id)
         );
+        console.log('Inactive clients found:', inactiveClients.length);
 
         // Add days since last interaction for each client
         const clientsWithDetails = await Promise.all(inactiveClients.map(async (client) => {
-            const lastInteraction = await InteractionLog.findOne({ 
-                client_id: client.client_id 
-            }).sort({ date: -1 });
+            try {
+                console.log('Checking client:', client.client_id);
+                
+                // Find the most recent interaction for this client
+                const lastInteraction = await InteractionLog.findOne({ 
+                    client_id: client.client_id 
+                }).sort({ date: -1 }).lean();
+                
+                console.log('Last interaction found:', lastInteraction);
 
-            const daysSinceLastInteraction = lastInteraction 
-                ? Math.floor((new Date() - new Date(lastInteraction.date)) / (1000 * 60 * 60 * 24))
-                : null;
+                let daysSinceLastInteraction = null;
+                let lastInteractionDate = null;
 
-            return {
-                ...client.toObject(),
-                days_since_last_interaction: daysSinceLastInteraction,
-                last_interaction_date: lastInteraction ? lastInteraction.date : null
-            };
+                if (lastInteraction && lastInteraction.date) {
+                    const lastDate = new Date(lastInteraction.date);
+                    const now = new Date();
+                    daysSinceLastInteraction = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+                    lastInteractionDate = lastDate;
+                    console.log('Calculated days since last interaction:', daysSinceLastInteraction);
+                }
+
+                return {
+                    ...client.toObject(),
+                    days_since_last_interaction: daysSinceLastInteraction,
+                    last_interaction_date: lastInteractionDate
+                };
+            } catch (error) {
+                console.error('Error processing client:', client.client_id, error);
+                return {
+                    ...client.toObject(),
+                    days_since_last_interaction: null,
+                    last_interaction_date: null,
+                    error: 'Error processing interaction data'
+                };
+            }
         }));
 
         res.json({
@@ -112,6 +137,10 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
             clients: clientsWithDetails
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error in getClientsWithoutRecentInteractions:', error);
+        res.status(500).json({ 
+            message: 'Error fetching inactive clients',
+            error: error.message 
+        });
     }
 }; 
