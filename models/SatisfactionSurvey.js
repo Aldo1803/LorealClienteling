@@ -16,6 +16,11 @@ const satisfactionSurveySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  interactionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'InteractionLog',
+    required: true
+  },
   date: {
     type: Date,
     default: Date.now,
@@ -64,6 +69,7 @@ const satisfactionSurveySchema = new mongoose.Schema({
 // Create indexes for better query performance
 satisfactionSurveySchema.index({ clientId: 1 });
 satisfactionSurveySchema.index({ userId: 1 });
+satisfactionSurveySchema.index({ interactionId: 1 });
 satisfactionSurveySchema.index({ date: -1 });
 satisfactionSurveySchema.index({ overallScore: -1 });
 

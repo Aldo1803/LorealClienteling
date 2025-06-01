@@ -6,13 +6,14 @@ exports.createSurvey = async (req, res) => {
   try {
     const {
       clientId,
+      interactionId,
       overallScore,
       responses,
       comments
     } = req.body;
 
     // Validate required fields
-    const requiredFields = ['clientId', 'overallScore', 'responses'];
+    const requiredFields = ['clientId', 'interactionId', 'overallScore', 'responses'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
@@ -36,6 +37,7 @@ exports.createSurvey = async (req, res) => {
     const survey = new SatisfactionSurvey({
       surveyId: uuidv4(),
       clientId,
+      interactionId,
       userId: req.user._id,
       overallScore,
       responses,
@@ -92,6 +94,27 @@ exports.getSurveyById = async (req, res) => {
     
     if (!survey) {
       return res.status(404).json({ message: 'Satisfaction survey not found' });
+    }
+    
+    res.status(200).json(survey);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error fetching satisfaction survey',
+      error: error.message
+    });
+  }
+};
+
+// Get survey by interaction ID
+exports.getSurveyByInteractionId = async (req, res) => {
+  try {
+    const survey = await SatisfactionSurvey.findOne({ interactionId: req.params.interactionId })
+      .populate('clientId', 'firstName lastName')
+      .populate('userId', 'name')
+      .populate('interactionId');
+    
+    if (!survey) {
+      return res.status(404).json({ message: 'Satisfaction survey not found for this interaction' });
     }
     
     res.status(200).json(survey);

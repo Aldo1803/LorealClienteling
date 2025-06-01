@@ -13,6 +13,9 @@ router.get('/', auth, roles('admin'), satisfactionSurveyController.getAllSurveys
 // Get satisfaction surveys for a specific client
 router.get('/client/:clientId', auth, satisfactionSurveyController.getClientSurveys);
 
+// Get satisfaction survey by interaction ID
+router.get('/interaction/:interactionId', auth, satisfactionSurveyController.getSurveyByInteractionId);
+
 // Get satisfaction survey by ID
 router.get('/:id', auth, satisfactionSurveyController.getSurveyById);
 
