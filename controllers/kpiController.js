@@ -91,7 +91,7 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
 
         // Filter out clients with recent interactions
         const inactiveClients = allClients.filter(client => 
-            !recentInteractions.includes(client.client_id)
+            !recentInteractions.includes(client._id.toString())
         );
         console.log('Inactive clients found:', inactiveClients.length);
 
@@ -102,13 +102,13 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
                 
                 // Debug: Check all interactions for this client
                 const clientInteractions = await InteractionLog.find({ 
-                    client_id: client.client_id 
+                    client_id: client._id.toString()
                 }).lean();
                 console.log('All interactions for client', client.client_id, ':', clientInteractions);
                 
                 // Find the most recent interaction for this client
                 const lastInteraction = await InteractionLog.findOne({ 
-                    client_id: client.client_id 
+                    client_id: client._id.toString()
                 }).sort({ date: -1 }).lean();
                 
                 console.log('Last interaction found for client', client.client_id, ':', lastInteraction);
