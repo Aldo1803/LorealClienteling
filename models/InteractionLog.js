@@ -28,7 +28,8 @@ const interactionLogSchema = new mongoose.Schema({
   },
   viewed_product: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   comments: {
     type: String,
@@ -37,7 +38,15 @@ const interactionLogSchema = new mongoose.Schema({
   // New fields for file uploads and additional metadata
   product_photo: {
     type: String,
-    default: null
+    trim: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // Allow empty values
+        // Check if it's just a filename without path
+        return !v.includes('/') && !v.includes('\\');
+      },
+      message: 'Product photo should be just the filename without path'
+    }
   },
   additional_files: [{
     filename: String,
@@ -70,6 +79,7 @@ interactionLogSchema.index({ beauty_advisor_id: 1 });
 interactionLogSchema.index({ date: 1 });
 interactionLogSchema.index({ action: 1 });
 interactionLogSchema.index({ viewed_product: 1 });
+interactionLogSchema.index({ product_photo: 1 });
 interactionLogSchema.index({ 'metadata.follow_up_required': 1 });
 interactionLogSchema.index({ 'metadata.follow_up_date': 1 });
 

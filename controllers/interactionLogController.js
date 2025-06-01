@@ -30,7 +30,7 @@ const createInteractionLog = async (req, res) => {
         let product_photo = null;
         if (req.files && req.files.product_photo) {
             const photoFile = req.files.product_photo[0];
-            product_photo = photoFile.path;
+            product_photo = path.basename(photoFile.path);
         }
 
         // Handle additional files
@@ -152,7 +152,7 @@ const updateInteractionLog = async (req, res) => {
                 fs.unlinkSync(interactionLog.product_photo);
             }
             
-            interactionLog.product_photo = photoFile.path;
+            interactionLog.product_photo = path.basename(photoFile.path);
         }
 
         // Handle additional files
