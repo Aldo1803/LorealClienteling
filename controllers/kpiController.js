@@ -66,4 +66,50 @@ exports.getSummary = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// Get clients without recent interactions
+exports.getClientsWithoutRecentInteractions = async (req, res) => {
+    try {
+        const daysThreshold = parseInt(req.query.days) || 30; // Default to 30 days if not specified
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+
+        // Get all clients
+        const allClients = await Client.find();
+        
+        // Get clients with recent interactions
+        const recentInteractions = await InteractionLog.find({
+            date: { $gte: cutoffDate }
+        }).distinct('client_id');
+
+        // Filter out clients with recent interactions
+        const inactiveClients = allClients.filter(client => 
+            !recentInteractions.includes(client.client_id)
+        );
+
+        // Add days since last interaction for each client
+        const clientsWithDetails = await Promise.all(inactiveClients.map(async (client) => {
+            const lastInteraction = await InteractionLog.findOne({ 
+                client_id: client.client_id 
+            }).sort({ date: -1 });
+
+            return {
+                ...client.toObject(),
+                days_since_last_interaction: lastInteraction 
+                    ? Math.floor((new Date() - lastInteraction.date) / (1000 * 60 * 60 * 24))
+                    : null,
+                last_interaction_date: lastInteraction ? lastInteraction.date : null
+            };
+        }));
+
+        res.json({
+            total_clients: allClients.length,
+            inactive_clients: clientsWithDetails.length,
+            days_threshold: daysThreshold,
+            clients: clientsWithDetails
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 }; 
