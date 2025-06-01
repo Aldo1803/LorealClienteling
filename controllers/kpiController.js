@@ -79,6 +79,10 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
         const allClients = await Client.find();
         console.log('Total clients found:', allClients.length);
         
+        // Debug: Check all interactions
+        const allInteractions = await InteractionLog.find().lean();
+        console.log('All interactions in database:', allInteractions);
+        
         // Get clients with recent interactions
         const recentInteractions = await InteractionLog.find({
             date: { $gte: cutoffDate }
@@ -95,6 +99,12 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
         const clientsWithDetails = await Promise.all(inactiveClients.map(async (client) => {
             try {
                 console.log('Checking client:', client.client_id);
+                
+                // Debug: Check all interactions for this client
+                const clientInteractions = await InteractionLog.find({ 
+                    client_id: client.client_id 
+                }).lean();
+                console.log('All interactions for client', client.client_id, ':', clientInteractions);
                 
                 // Find the most recent interaction for this client
                 const lastInteraction = await InteractionLog.findOne({ 
