@@ -101,24 +101,37 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
                     client_id: client.client_id 
                 }).sort({ date: -1 }).lean();
                 
-                console.log('Last interaction found:', lastInteraction);
+                console.log('Last interaction found for client', client.client_id, ':', lastInteraction);
 
                 let daysSinceLastInteraction = null;
                 let lastInteractionDate = null;
 
                 if (lastInteraction && lastInteraction.date) {
-                    const lastDate = new Date(lastInteraction.date);
-                    const now = new Date();
-                    daysSinceLastInteraction = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-                    lastInteractionDate = lastDate;
-                    console.log('Calculated days since last interaction:', daysSinceLastInteraction);
+                    try {
+                        const lastDate = new Date(lastInteraction.date);
+                        if (!isNaN(lastDate.getTime())) {  // Check if date is valid
+                            const now = new Date();
+                            daysSinceLastInteraction = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+                            lastInteractionDate = lastDate;
+                            console.log('Calculated days since last interaction for client', client.client_id, ':', daysSinceLastInteraction);
+                        } else {
+                            console.log('Invalid date format for client', client.client_id, ':', lastInteraction.date);
+                        }
+                    } catch (dateError) {
+                        console.error('Error processing date for client', client.client_id, ':', dateError);
+                    }
+                } else {
+                    console.log('No valid interaction found for client', client.client_id);
                 }
 
-                return {
+                const clientDetails = {
                     ...client.toObject(),
                     days_since_last_interaction: daysSinceLastInteraction,
                     last_interaction_date: lastInteractionDate
                 };
+
+                console.log('Final client details:', clientDetails);
+                return clientDetails;
             } catch (error) {
                 console.error('Error processing client:', client.client_id, error);
                 return {
@@ -129,6 +142,14 @@ exports.getClientsWithoutRecentInteractions = async (req, res) => {
                 };
             }
         }));
+
+        // Log the final response
+        console.log('Final response:', {
+            total_clients: allClients.length,
+            inactive_clients: clientsWithDetails.length,
+            days_threshold: daysThreshold,
+            sample_client: clientsWithDetails[0] // Log first client as sample
+        });
 
         res.json({
             total_clients: allClients.length,
