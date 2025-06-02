@@ -5,13 +5,19 @@ const InteractionLog = require('../models/InteractionLog');
 // Create a new client
 exports.createClient = async (req, res) => {
     try {
-        const { name, email, phone, preferences, preferredContactMethod, followUpPhase } = req.body;
+        const { name, email, phone, birthday, preferences, preferredContactMethod, followUpPhase } = req.body;
         
+        // Validate birthday format
+        if (!birthday || !(birthday instanceof Date) && isNaN(new Date(birthday).getTime())) {
+            return res.status(400).json({ message: 'Invalid birthday format. Please provide a valid date.' });
+        }
+
         const client = new Client({
             client_id: uuidv4(),
             name,
             email,
             phone,
+            birthday: new Date(birthday),
             preferences: preferences || [],
             preferredContactMethod: preferredContactMethod || 'email',
             followUpPhase: followUpPhase || 'initial',
@@ -51,7 +57,7 @@ exports.getClientById = async (req, res) => {
 // Update client
 exports.updateClient = async (req, res) => {
     try {
-        const { name, email, phone, preferences, preferredContactMethod, followUpPhase } = req.body;
+        const { name, email, phone, birthday, preferences, preferredContactMethod, followUpPhase } = req.body;
         const client = await Client.findOne({ client_id: req.params.client_id });
         
         if (!client) {
@@ -61,6 +67,13 @@ exports.updateClient = async (req, res) => {
         if (name) client.name = name;
         if (email) client.email = email;
         if (phone) client.phone = phone;
+        if (birthday) {
+            // Validate birthday format
+            if (!(birthday instanceof Date) && isNaN(new Date(birthday).getTime())) {
+                return res.status(400).json({ message: 'Invalid birthday format. Please provide a valid date.' });
+            }
+            client.birthday = new Date(birthday);
+        }
         if (preferences) client.preferences = preferences;
         if (preferredContactMethod) client.preferredContactMethod = preferredContactMethod;
         if (followUpPhase) client.followUpPhase = followUpPhase;
