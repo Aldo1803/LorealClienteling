@@ -32,6 +32,17 @@ const clientSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    birthday: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: function(date) {
+                // Check if date is not in the future
+                return date <= new Date();
+            },
+            message: 'Birthday cannot be in the future'
+        }
+    },
     clientType: {
         type: String,
         required: true,
@@ -63,6 +74,7 @@ clientSchema.index({ client_id: 1 });
 clientSchema.index({ name: 1 });
 clientSchema.index({ email: 1 });
 clientSchema.index({ phone: 1 });
+clientSchema.index({ birthday: 1 });
 clientSchema.index({ clientType: 1 });
 clientSchema.index({ preferences: 1 });
 clientSchema.index({ 'purchase_history.date': 1 });

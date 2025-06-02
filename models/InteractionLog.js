@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Client = require('./Client');
 
 const interactionLogSchema = new mongoose.Schema({
   interaction_id: {
@@ -82,5 +83,26 @@ interactionLogSchema.index({ viewed_product: 1 });
 interactionLogSchema.index({ product_photo: 1 });
 interactionLogSchema.index({ 'metadata.follow_up_required': 1 });
 interactionLogSchema.index({ 'metadata.follow_up_date': 1 });
+
+// Update client type after saving a new interaction
+interactionLogSchema.post('save', async function() {
+  try {
+    // Count total interactions for this client
+    const interactionCount = await this.constructor.countDocuments({ client_id: this.client_id });
+    
+    // Find and update the client
+    const client = await Client.findOne({ client_id: this.client_id });
+    if (client) {
+      if (interactionCount >= 5) {
+        client.clientType = 'VIP';
+      } else if (interactionCount >= 2) {
+        client.clientType = 'recurrente';
+      }
+      await client.save();
+    }
+  } catch (error) {
+    console.error('Error updating client type:', error);
+  }
+});
 
 module.exports = mongoose.model('InteractionLog', interactionLogSchema); 
